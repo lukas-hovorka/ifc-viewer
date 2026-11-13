@@ -1,0 +1,290 @@
+/* IFC Viewer – rozložení aplikace nad komponentami EBC_UI_vibe (src/ebc/ebc-components.css, needitovat).
+   Barvy, písma a rozměry jen přes proměnné --ebc-*; třídy .ifc-* jsou rozložení a prvky, které EBC_UI_vibe nemá
+   (plovoucí panel, lišta nástrojů, strom, bublina nápovědy, oznámení). */
+
+[hidden] { display: none !important; }
+[popover]:not(:popover-open) { display: none !important; }
+
+html, body { height: 100%; margin: 0; }
+.ifc-app { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100dvh; overflow: hidden; }
+.ifc-stage { position: relative; min-height: 0; overflow: hidden; }
+.ifc-viewport { position: absolute; inset: 0; outline: none; }
+.ifc-viewport > canvas { display: block; width: 100%; height: 100%; }
+.ifc-viewport.is-measure > canvas, .ifc-viewport.is-pick > canvas { cursor: crosshair; }
+.ifc-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 1; }
+.ifc-menu-btn { display: none; font-size: var(--ebc-font-size-xl); }
+.ifc-push { margin-left: auto; }
+.ifc-muted { margin: 0; color: var(--ebc-color-text-secondary); font: var(--ebc-typography-small); }
+
+/* ikony */
+[data-ico] { display: inline-grid; place-items: center; flex: none; }
+.ifc-ico { width: 1em; height: 1em; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* výběr rámečkem: plný = celé uvnitř (zleva doprava), čárkovaný = i protnuté (zprava doleva) – jako v Revitu */
+.ifc-marquee { position: absolute; pointer-events: none; z-index: 2; border: var(--ebc-border-width-thin) solid var(--ebc-color-accent-default); background: color-mix(in srgb, var(--ebc-color-accent-default) 10%, transparent); }
+.ifc-marquee.is-crossing { border-style: dashed; }
+
+/* ---------- menší tlačítko pro husté panely (vychází z .ebc-btn) ---------- */
+.ifc-btn { padding: var(--ebc-space-4) var(--ebc-space-10); gap: var(--ebc-space-4); border-width: var(--ebc-border-width-thin); font-size: var(--ebc-font-size-md); white-space: nowrap; }
+.ifc-btn [data-ico] { font-size: var(--ebc-font-size-lg); }
+.ebc-filter:disabled { opacity: var(--ebc-opacity-disabled); cursor: not-allowed; }
+.ebc-icon-btn { position: relative; border-radius: var(--ebc-radius-lg); }
+.ebc-icon-btn:disabled { cursor: not-allowed; }
+.ebc-icon-btn[aria-pressed="true"] { color: var(--ebc-color-accent-default); background: var(--ebc-color-list-hover); }
+.ebc-icon-btn:focus-visible, .ebc-filter:focus-visible { outline: 2px solid var(--ebc-color-accent-default); outline-offset: 2px; }
+
+/* částečný výběr (strom, filtry): výplň a pomlčka – barva čárky se dědí z fajfky EBC */
+.ebc-choice input[type="checkbox"]:indeterminate { background: var(--ebc-color-accent-default); border-color: var(--ebc-color-accent-default); }
+.ebc-choice input[type="checkbox"]:indeterminate::after { width: calc(var(--ebc-size-check) / 2); height: 0; margin: 0; border-left: 0; transform: none; }
+
+/* ---------- plovoucí panel (rám jako karta / dialog EBC) ---------- */
+.ifc-panel {
+  position: absolute; top: var(--ebc-space-12); z-index: 4;
+  display: flex; flex-direction: column;
+  max-height: calc(100% - 2 * var(--ebc-space-12));
+  background: var(--ebc-color-bg-window); color: var(--ebc-color-text-primary);
+  border: var(--ebc-border-width-thin) solid var(--ebc-color-border-default);
+  border-radius: var(--ebc-radius-xl); box-shadow: var(--ebc-shadow-dialog);
+  overflow: hidden;
+}
+.ifc-panel--left { left: var(--ebc-space-12); width: 380px; max-width: calc(100% - 2 * var(--ebc-space-12)); }
+/* s načtenými modely na celou výšku (strom potřebuje pevnou výšku kvůli virtualizaci) */
+.ifc-panel--left[data-has-models]:not([data-collapsed]) { height: calc(100% - 2 * var(--ebc-space-12)); }
+.ifc-panel--right { right: var(--ebc-space-12); width: 360px; max-width: calc(100% - 2 * var(--ebc-space-12)); }
+.ifc-panel__head { flex: none; display: flex; align-items: center; gap: var(--ebc-space-8); padding: var(--ebc-space-12) var(--ebc-space-12) var(--ebc-space-8) var(--ebc-space-16); }
+.ifc-panel__head--bar { position: relative; z-index: 1; height: var(--ebc-size-titlebar-height); padding: 0 var(--ebc-space-4) 0 var(--ebc-space-14); background: var(--ebc-color-bg-chrome); font: var(--ebc-typography-caption-bar); }
+.ifc-panel__title { margin: 0; font: inherit; }
+.ifc-panel__collapse { margin-left: auto; }
+.ifc-panel__collapse .ebc-icon { transition: transform var(--ebc-duration-toggle); }
+.ifc-panel[data-collapsed] .ifc-panel__collapse .ebc-icon { transform: rotate(180deg); }
+.ifc-panel[data-collapsed] .ifc-panel__body { display: none; }
+.ifc-panel__body { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.ifc-panel__foot { flex: none; margin: 0; padding: var(--ebc-space-8) var(--ebc-space-16); border-top: var(--ebc-border-width-thin) solid var(--ebc-color-list-separator); color: var(--ebc-color-text-secondary); }
+.ifc-count { padding: var(--ebc-space-2) var(--ebc-space-8); border-radius: var(--ebc-radius-pill); background: var(--ebc-color-bg-surface); font: var(--ebc-typography-table-header); font-variant-numeric: tabular-nums; }
+
+/* úchop šířky levého panelu */
+.ifc-panel-resize { position: absolute; width: var(--ebc-space-8); z-index: 5; cursor: ew-resize; touch-action: none; }
+.ifc-panel-resize::after { content: ""; position: absolute; top: var(--ebc-space-8); bottom: var(--ebc-space-8); left: var(--ebc-space-3); width: var(--ebc-space-2); background: transparent; transition: background var(--ebc-duration-toggle); }
+.ifc-panel-resize:hover::after, .ifc-panel-resize:focus-visible::after, .ifc-panel-resize.is-drag::after { background: var(--ebc-color-accent-default); }
+.ifc-panel-resize:focus-visible { outline: none; }
+.ifc-panel[data-collapsed] + .ifc-panel-resize { display: none; }
+
+/* záložky panelu: 8 oddílů se do šířky panelu vejde jen jako filtrovací tlačítka (záložky EBC mají 150 × 52 px) */
+.ifc-tabs { flex: none; display: flex; flex-wrap: wrap; gap: var(--ebc-space-4); padding: 0 var(--ebc-space-12) var(--ebc-space-10); border-bottom: var(--ebc-border-width-thin) solid var(--ebc-color-border-default); }
+.ifc-tabs .ebc-filter[aria-selected="true"] { background: var(--ebc-color-accent-default); }
+.ifc-seg { display: flex; flex-wrap: wrap; gap: var(--ebc-space-4); }
+
+.ifc-pane:not([hidden]) { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.ifc-pane--scroll { overflow: auto; }
+.ifc-pane--tree { overflow: hidden; }
+.ifc-pad { display: grid; gap: var(--ebc-space-8); padding: var(--ebc-space-12); }
+.ifc-tools { flex: none; display: grid; gap: var(--ebc-space-8); padding: var(--ebc-space-10) var(--ebc-space-12); border-bottom: var(--ebc-border-width-thin) solid var(--ebc-color-border-default); }
+.ifc-tools .ebc-choice { font-size: var(--ebc-font-size-md); }
+.ifc-row { display: flex; align-items: center; gap: var(--ebc-space-8); }
+.ifc-row--wrap { flex-wrap: wrap; row-gap: var(--ebc-space-6); }
+.ifc-search { position: relative; display: block; }
+.ifc-search > [data-ico] { position: absolute; left: var(--ebc-space-8); top: 50%; translate: 0 -50%; color: var(--ebc-color-text-secondary); pointer-events: none; }
+.ifc-search .ebc-input { padding-left: var(--ebc-space-30); }
+.ifc-note { display: grid; justify-items: start; gap: var(--ebc-space-6); padding: var(--ebc-space-10) var(--ebc-space-12) var(--ebc-space-12); border-top: var(--ebc-border-width-thin) solid var(--ebc-color-list-separator); }
+
+/* drop zóna: po načtení modelů jen úzký pruh (panel patří seznamu a stromu) */
+.ifc-panel[data-has-models] .ebc-dropzone { min-height: 0; padding: var(--ebc-space-12); }
+.ifc-panel[data-has-models] .ebc-dropzone__icon { display: none; }
+.ifc-panel[data-has-models] .ebc-dropzone__title { margin-top: 0; }
+
+/* ---------- seznam modelů (řádky v .ebc-filelist) ---------- */
+.ifc-files { flex: none; max-height: none; overflow: visible; padding: 0 var(--ebc-space-8) var(--ebc-space-8); }
+.ebc-filelist > .ifc-file { flex-wrap: wrap; gap: var(--ebc-space-4) var(--ebc-space-8); padding-left: var(--ebc-space-4); border-bottom: var(--ebc-border-width-thin) solid var(--ebc-color-list-separator); }
+.ifc-file__name { flex: 1; min-width: 0; display: grid; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ifc-file__name:hover .ebc-filelist__name { color: var(--ebc-color-text-link); }
+.ifc-file__meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ebc-color-text-secondary); font-size: var(--ebc-font-size-xs); }
+.ifc-file__size { color: var(--ebc-color-text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ifc-file__status { flex: 0 0 100%; margin: 0; }
+.ifc-progress--indeterminate .ebc-progress__bar { width: calc(var(--ebc-size-progress-height) * 5); padding: 0; animation: ifc-indeterminate var(--ebc-duration-indeterminate) linear infinite; }
+@keyframes ifc-indeterminate { from { margin-left: calc(var(--ebc-size-progress-height) * -5); } to { margin-left: 100%; } }
+
+/* barva modelu: kolečko v řádku a nabídka barev */
+.ifc-swatch {
+  flex: none; padding: 0; cursor: pointer;
+  width: var(--ebc-size-check); height: var(--ebc-size-check); border-radius: 50%;
+  border: var(--ebc-border-width-medium) solid var(--ebc-color-border-default);
+  background: var(--swatch, transparent);
+}
+.ifc-swatch:hover, .ifc-swatch[aria-checked="true"] { border-color: var(--ebc-color-accent-default); }
+/* původní barvy z IFC: kolečko z kategorií dat */
+.ifc-swatch.is-original {
+  background: conic-gradient(var(--ebc-color-data-category-1), var(--ebc-color-data-category-2), var(--ebc-color-data-category-3),
+    var(--ebc-color-data-category-4), var(--ebc-color-data-category-5), var(--ebc-color-data-category-6), var(--ebc-color-data-category-1));
+}
+.ifc-colors__palette { display: grid; grid-template-columns: repeat(6, auto); justify-content: start; gap: var(--ebc-space-8); padding: var(--ebc-space-2) var(--ebc-space-4) var(--ebc-space-4); }
+.ifc-colors__palette .ifc-swatch { width: calc(var(--ebc-size-check) * 1.5); height: calc(var(--ebc-size-check) * 1.5); }
+.ifc-colors .ebc-menu__item[aria-checked="true"] { color: var(--ebc-color-text-accent); }
+.ifc-colors .ebc-menu__item .ifc-swatch { pointer-events: none; }
+.ifc-color-input { position: fixed; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+
+/* ---------- nabídky (popover) ---------- */
+.ebc-menu[popover] { position: fixed; inset: auto; margin: 0; color: var(--ebc-color-text-primary); box-shadow: var(--ebc-shadow-dialog); }
+.ifc-menu__label { padding: var(--ebc-space-2) var(--ebc-space-4) var(--ebc-space-4); }
+.ebc-menu__item [data-ico] { font-size: var(--ebc-font-size-lg); }
+.ifc-proj { padding: var(--ebc-space-4) var(--ebc-space-6); font-size: var(--ebc-font-size-md); }
+/* kontextová nabídka: Izolovat více / Skrýt více ▸ – podnabídka hodnot (třída, atributy, materiály, vlastnosti…) */
+.ifc-ctx-more__arrow { color: var(--ebc-color-text-secondary); }
+.ifc-ctx-more[aria-expanded="true"] { background: color-mix(in srgb, var(--ebc-color-accent-hover) 50%, transparent); }
+.ifc-ctx-sub { display: none; position: fixed; max-width: 420px; max-height: min(60vh, 520px); overflow-y: auto; box-shadow: var(--ebc-shadow-dialog); }
+.ifc-ctx-sub.is-open { display: flex; }
+.ifc-ctx-sub .ebc-menu__item { flex: none; grid-template-columns: 1fr auto; }
+.ifc-ctx-sub .ebc-menu__item > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ifc-ctx-sub__k { color: var(--ebc-color-text-secondary); }
+.ifc-ctx-sub .ifc-muted { padding: var(--ebc-space-6) var(--ebc-space-8); }
+
+/* ---------- strom (virtualizovaný – řádky absolutně, výška 28 px = ROW v tree.js = size.table.row-height) ---------- */
+.ifc-tree-host { flex: 1 1 auto; min-height: 120px; }
+.ifc-tree { position: relative; overflow: auto; overscroll-behavior: contain; outline: none; }
+.ifc-tree:focus-visible { box-shadow: inset 0 0 0 var(--ebc-border-width-medium) var(--ebc-color-accent-default); }
+.ifc-tree__spacer { width: 1px; }
+.ifc-tree__rows { position: absolute; inset: 0 0 auto 0; }
+.ifc-tree__row {
+  position: absolute; left: 0; right: 0; height: var(--ebc-size-table-row-height);
+  display: flex; align-items: center; gap: var(--ebc-space-4); padding-right: var(--ebc-space-8);
+  font: var(--ebc-typography-table-cell); white-space: nowrap; cursor: pointer; user-select: none;
+}
+.ifc-tree__row:hover { background: var(--ebc-color-list-hover); }
+.ifc-tree__row.is-sel { background: var(--ebc-color-table-selected); box-shadow: inset var(--ebc-border-width-state) 0 0 var(--ebc-color-table-selected-stripe); }
+.ifc-tree:focus-visible .ifc-tree__row.is-focus { outline: var(--ebc-border-width-thin) solid var(--ebc-color-accent-default); outline-offset: -1px; }
+.ifc-tree__twisty { flex: none; width: var(--ebc-space-16); text-align: center; color: var(--ebc-color-expander-chevron); }
+.ifc-tree__vis { flex: none; }
+.ifc-tree__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ifc-tree__cls, .ifc-tree__guid { flex: none; margin-left: auto; padding-left: var(--ebc-space-8); color: var(--ebc-color-text-secondary); font-size: var(--ebc-font-size-xs); }
+.ifc-tree__guid, .ifc-tree__guid-main { font-family: var(--ebc-font-family-mono); }
+.ifc-tree__guid-main { font-size: var(--ebc-font-size-sm); }
+.ifc-tree__row:has(.ifc-tree__guid-main) .ifc-tree__cls { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; max-width: 45%; }
+.ifc-tree__row:has(.ifc-tree__guid-main) .ifc-tree__label { flex: none; }
+.ifc-tree__row:has(.ifc-tree__guid) .ifc-tree__label { flex: 1 1 auto; }
+.ifc-tree-foot { flex: none; margin: 0; padding: var(--ebc-space-6) var(--ebc-space-12); border-top: var(--ebc-border-width-thin) solid var(--ebc-color-border-default); color: var(--ebc-color-text-secondary); font: var(--ebc-typography-small); }
+
+/* filtry podle hodnot (facets.js) – stejné řádky jako strom */
+.ifc-facets__head .ifc-tree__label { font-weight: var(--ebc-font-weight-semibold); }
+.ifc-facets__missing .ifc-tree__label { color: var(--ebc-color-text-secondary); font-style: italic; }
+.ifc-facets .ifc-class__n { flex: none; }
+.ifc-facets__msg { position: absolute; inset: var(--ebc-space-12) var(--ebc-space-12) auto; }
+
+/* třídy */
+.ifc-classes { flex: 1 1 auto; min-height: 0; overflow: auto; padding: var(--ebc-space-4) var(--ebc-space-8) var(--ebc-space-12); }
+.ifc-class { display: flex; width: 100%; font: var(--ebc-typography-table-cell); }
+.ifc-class__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ifc-class__n { margin-left: auto; padding-left: var(--ebc-space-8); color: var(--ebc-color-text-secondary); font-variant-numeric: tabular-nums; }
+
+/* ---------- vlastnosti ---------- */
+.ifc-props-head { display: grid; gap: var(--ebc-space-2); padding: var(--ebc-space-12) var(--ebc-space-14); border-bottom: var(--ebc-border-width-thin) solid var(--ebc-color-border-default); }
+.ifc-props-head p { margin: 0; overflow-wrap: anywhere; }
+.ifc-props-head__name { font: var(--ebc-typography-subtitle); }
+.ifc-props-head__cls { color: var(--ebc-color-text-secondary); font: var(--ebc-typography-small); }
+.ifc-props-head__guid { display: flex; align-items: center; gap: var(--ebc-space-8); }
+.ifc-props-head__guid code { font: var(--ebc-typography-mono); }
+.ifc-groups { display: grid; gap: var(--ebc-space-8); padding: var(--ebc-space-12); }
+.ifc-kv { padding: 0; }
+.ifc-kv .ebc-table { table-layout: fixed; background: transparent; }
+.ifc-kv .ebc-table td { overflow-wrap: anywhere; vertical-align: top; }
+.ifc-kv .ebc-table tr:last-child td { border-bottom: 0; }
+.ifc-kv__k { width: 42%; color: var(--ebc-color-text-secondary); }
+
+/* ---------- lišta nástrojů nad plátnem ---------- */
+.ifc-hud {
+  position: absolute; left: 50%; bottom: var(--ebc-space-12); translate: -50% 0; z-index: 3;
+  display: flex; align-items: center; gap: var(--ebc-space-4); padding: var(--ebc-space-4) var(--ebc-space-8);
+  background: var(--ebc-color-bg-window);
+  border: var(--ebc-border-width-thin) solid var(--ebc-color-border-default);
+  border-radius: var(--ebc-radius-xl); box-shadow: var(--ebc-shadow-dialog);
+}
+.ifc-hud__sep { align-self: stretch; width: var(--ebc-border-width-thin); margin: var(--ebc-space-2) var(--ebc-space-4); background: var(--ebc-color-border-default); }
+.ifc-hint { position: absolute; left: 50%; bottom: calc(var(--ebc-space-24) + var(--ebc-size-titlebar-height)); translate: -50% 0; margin: 0; z-index: 1; color: var(--ebc-color-log-muted); white-space: nowrap; pointer-events: none; }
+
+.ifc-toolcard:not([hidden]) ~ .ifc-hint { display: none; }
+@media (max-width: 1100px) { .ifc-hint { display: none; } }
+
+/* bublina nápovědy u ikonových tlačítek (data-tip) */
+[data-tip]::after {
+  content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + var(--ebc-space-8)); translate: -50% 0; z-index: 10;
+  padding: var(--ebc-space-4) var(--ebc-space-8);
+  background: var(--ebc-color-bg-chrome); color: var(--ebc-color-text-primary);
+  border: var(--ebc-border-width-thin) solid var(--ebc-color-border-default); border-radius: var(--ebc-radius-md);
+  font: var(--ebc-typography-small); white-space: nowrap; pointer-events: none; opacity: 0;
+}
+[data-tip]:hover::after, [data-tip]:focus-visible::after { opacity: 1; }
+[data-tip][data-tip-pos="bottom"]::after { bottom: auto; top: calc(100% + var(--ebc-space-8)); left: auto; right: 0; translate: none; }
+
+/* ---------- karta aktivního nástroje (řez, kvádr, rozpad, měření) – vpravo dole nad lištou ---------- */
+.ifc-toolcard {
+  position: absolute; right: var(--ebc-space-12); bottom: calc(var(--ebc-space-24) + var(--ebc-size-titlebar-height)); z-index: 3;
+  display: grid; width: 340px; max-height: calc(100% - 120px); overflow: auto;
+  background: var(--ebc-color-bg-window);
+  border: var(--ebc-border-width-thin) solid var(--ebc-color-border-default);
+  border-radius: var(--ebc-radius-xl); box-shadow: var(--ebc-shadow-dialog);
+}
+.ifc-panel--right:not([hidden]) ~ .ifc-toolcard { right: calc(360px + 2 * var(--ebc-space-12)); }
+.ifc-tc { display: grid; gap: var(--ebc-space-8); padding: var(--ebc-space-12); }
+.ifc-tc + .ifc-tc { border-top: var(--ebc-border-width-thin) solid var(--ebc-color-border-default); }
+.ifc-tc__head { display: flex; align-items: center; gap: var(--ebc-space-4); }
+.ifc-tc__head h3 { margin: 0 auto 0 0; font: var(--ebc-typography-caption-bar); }
+.ifc-tc__row { display: flex; align-items: center; gap: var(--ebc-space-8); }
+.ifc-tc__axis { display: grid; grid-template-columns: var(--ebc-space-16) 1fr 1fr; align-items: center; gap: var(--ebc-space-8); font-size: var(--ebc-font-size-md); }
+.ifc-tc__z { font-weight: var(--ebc-font-weight-semibold); color: var(--ebc-color-text-secondary); }
+.ifc-tc__val { min-width: 64px; text-align: right; font-size: var(--ebc-font-size-md); font-variant-numeric: tabular-nums; }
+.ifc-tc .ebc-choice { font-size: var(--ebc-font-size-md); }
+.ifc-range { flex: 1; min-width: 0; accent-color: var(--ebc-color-accent-default); }
+.ifc-legend { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--ebc-space-2); max-height: 200px; overflow: auto; font: var(--ebc-typography-table-cell); }
+.ifc-legend li { display: grid; grid-template-columns: var(--ebc-space-12) var(--ebc-space-20) 1fr; align-items: center; gap: var(--ebc-space-8); }
+.ifc-legend__sw { width: var(--ebc-space-12); height: var(--ebc-space-12); border-radius: var(--ebc-radius-xs); }
+.ifc-legend__n { color: var(--ebc-color-text-secondary); text-align: right; font-variant-numeric: tabular-nums; }
+.ifc-legend__t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ifc-mlist { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--ebc-space-4); max-height: 180px; overflow: auto; }
+.ifc-mlist li { display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: var(--ebc-space-8); font-size: var(--ebc-font-size-md); }
+.ifc-mlist li .ifc-muted { grid-column: 1; }
+.ifc-mlist li .ebc-icon-btn { grid-column: 2; grid-row: 1 / span 2; }
+
+/* ---------- měření – SVG nad plátnem ---------- */
+.ifc-m-line { stroke: var(--ebc-color-accent-default); stroke-width: 2; }
+.ifc-m-line--live { stroke-dasharray: 6 4; }
+.ifc-m-pt { fill: var(--ebc-color-bg-window); stroke: var(--ebc-color-accent-default); stroke-width: 2; }
+.ifc-m-cursor { fill: none; stroke: var(--ebc-color-accent-default); stroke-width: 2; }
+.ifc-m-cursor.is-snap { fill: var(--ebc-color-accent-default); fill-opacity: 0.25; stroke-width: 2.5; }
+.ifc-m-edge { stroke: var(--ebc-color-accent-default); stroke-width: 4; stroke-opacity: 0.55; stroke-linecap: round; }
+.ifc-m-guide { stroke: var(--ebc-color-log-muted); stroke-width: 1.5; stroke-dasharray: 3 3; }
+/* zamknutý směr: osy jako v CAD (X červená, Y zelená, Z modrá), kolmice = akcent */
+.ifc-m-ax--x { stroke: var(--ebc-color-status-error); }
+.ifc-m-ax--y { stroke: var(--ebc-color-status-success); }
+.ifc-m-ax--z { stroke: var(--ebc-color-data-category-1); }
+.ifc-m-label rect { fill: var(--ebc-color-bg-window); stroke: var(--ebc-color-border-default); }
+.ifc-m-label text { fill: var(--ebc-color-text-primary); font: var(--ebc-typography-table-header); font-variant-numeric: tabular-nums; }
+.ifc-m-label--hint rect { fill: var(--ebc-color-bg-chrome); stroke: none; opacity: 0.9; }
+.ifc-m-label--hint text { fill: var(--ebc-color-text-primary); font: var(--ebc-typography-caption); }
+
+/* ---------- oznámení a potvrzovací dialog ---------- */
+.ifc-toasts { position: fixed; left: 50%; bottom: calc(var(--ebc-space-40) + var(--ebc-size-titlebar-height)); translate: -50% 0; z-index: 20; display: grid; gap: var(--ebc-space-8); width: min(var(--ebc-size-dialog-max-width), calc(100vw - 2 * var(--ebc-space-16))); pointer-events: none; }
+.ifc-toast {
+  pointer-events: auto; display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: var(--ebc-space-10);
+  padding: var(--ebc-space-10) var(--ebc-space-12);
+  background: var(--ebc-color-bg-window); color: var(--ebc-color-text-primary);
+  border: var(--ebc-border-width-thin) solid var(--ebc-color-border-default);
+  border-radius: var(--ebc-radius-xl); box-shadow: var(--ebc-shadow-dialog);
+}
+.ifc-toast p { margin: 0; align-self: center; overflow-wrap: anywhere; }
+.ifc-toast__icon { width: var(--ebc-size-dialog-glyph); height: var(--ebc-size-dialog-glyph); font-size: var(--ebc-size-dialog-glyph); }
+.ifc-dialog { padding: 0; color: var(--ebc-color-text-primary); }
+.ifc-dialog::backdrop { background: var(--ebc-color-shadow); }
+.ifc-dialog .ebc-dialog__message { margin: 0; }
+
+.ifc-scrim { display: none; position: absolute; inset: 0; z-index: 3; background: var(--ebc-color-shadow); }
+
+/* ---------- úzký displej: levý panel výsuvný, vlastnosti jako spodní list ---------- */
+@media (max-width: 760px) {
+  .ifc-menu-btn { display: grid; }
+  .ifc-hint, .ifc-panel-resize { display: none; }
+  .ifc-panel--left { translate: calc(-100% - 2 * var(--ebc-space-12)) 0; transition: translate var(--ebc-duration-toggle); width: min(380px, calc(100% - 2 * var(--ebc-space-12))) !important; }
+  [data-panel-open] .ifc-panel--left { translate: 0 0; }
+  [data-panel-open] .ifc-scrim { display: block; }
+  .ifc-panel--right { top: auto; bottom: 0; left: 0; right: 0; width: auto; max-width: none; height: 45%; border-radius: var(--ebc-radius-xl) var(--ebc-radius-xl) 0 0; z-index: 3; }
+  .ifc-panel--right:not([hidden]) ~ .ifc-hud { bottom: calc(45% + var(--ebc-space-8)); }
+  .ifc-toolcard { left: var(--ebc-space-8); right: var(--ebc-space-8); width: auto; }
+  .ifc-panel--right:not([hidden]) ~ .ifc-toolcard { right: var(--ebc-space-8); bottom: calc(45% + var(--ebc-space-24) + var(--ebc-size-titlebar-height)); }
+}

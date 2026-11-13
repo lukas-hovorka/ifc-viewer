@@ -1,0 +1,254 @@
+<!doctype html>
+<!-- IFC Viewer – prohlížeč modelů IFC v prohlížeči. Vzhled podle EBC_UI_vibe (src/ebc, public/ebc – zkopírované soubory, needitovat). -->
+<html lang="cs" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IFC Viewer</title>
+  <meta name="description" content="Prohlížení modelů IFC přímo v prohlížeči – strom struktury, GUID, filtry, vlastnosti, řezy a měření. Modely se nikam neodesílají.">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./src/ebc/ebc-tokens.css">
+  <link rel="stylesheet" href="./src/ebc/ebc-components.css">
+  <link rel="stylesheet" href="./src/app.css">
+</head>
+<body class="ebc ifc-app">
+  <header class="ebc-titlebar">
+    <button class="ebc-titlebar__button ifc-menu-btn" type="button" data-panel-toggle aria-controls="panel" aria-expanded="false" aria-label="Panel modelů"><span data-ico="menu"></span></button>
+    <label class="ebc-theme-toggle" title="Světlý nebo tmavý motiv">
+      <svg class="ebc-icon" aria-hidden="true"><use href="./ebc/ebc-icons.svg#ebc-icon-theme-sun"/></svg>
+      <input type="checkbox" id="theme" checked aria-label="Tmavý motiv">
+      <span class="ebc-theme-toggle__track"></span>
+      <svg class="ebc-icon" aria-hidden="true"><use href="./ebc/ebc-icons.svg#ebc-icon-theme-moon"/></svg>
+    </label>
+    <span class="ebc-titlebar__title">IFC Viewer</span>
+    <span class="ebc-titlebar__spacer"></span>
+  </header>
+
+  <main class="ifc-stage">
+    <div class="ifc-viewport ebc-surface-tech" id="viewport" tabindex="0" aria-label="3D pohled na modely – stisknutým kolečkem posun, Shift + kolečkem otáčení, otáčením kolečka přiblížení, dvojklikem kolečka celý model; klepnutím výběr prvku (Ctrl přidá, Shift odebere), tažením výběr rámečkem; pravým tlačítkem nabídka"></div>
+    <svg class="ifc-overlay" id="overlay" aria-hidden="true"></svg>
+    <div class="ifc-scrim"></div>
+
+    <aside class="ifc-panel ifc-panel--left" id="panel" aria-labelledby="panel-t">
+      <header class="ifc-panel__head">
+        <h1 class="ebc-app-title" id="panel-t"><span class="ebc-app-title__accent">ifc</span>.viewer</h1>
+        <span class="ifc-count" id="loaded-count" title="Načtené modely" hidden></span>
+        <button class="ebc-icon-btn ifc-panel__collapse" type="button" data-panel-collapse aria-controls="panel-body"><svg class="ebc-icon" aria-hidden="true"><use href="./ebc/ebc-icons.svg#ebc-icon-chevron-up"/></svg></button>
+      </header>
+      <div class="ifc-panel__body" id="panel-body">
+        <div class="ifc-tabs" role="tablist" aria-label="Obsah panelu">
+          <button class="ebc-filter" role="tab" type="button" id="tab-files" aria-controls="pane-files" aria-selected="true">Modely</button>
+          <button class="ebc-filter" role="tab" type="button" id="tab-tree" aria-controls="pane-tree" aria-selected="false" disabled>Struktura</button>
+          <button class="ebc-filter" role="tab" type="button" id="tab-classes" aria-controls="pane-classes" aria-selected="false" disabled>Třídy</button>
+          <button class="ebc-filter" role="tab" type="button" id="tab-attrs" aria-controls="pane-attrs" aria-selected="false" data-facet-tab="attrs" disabled>Atributy</button>
+          <button class="ebc-filter" role="tab" type="button" id="tab-psets" aria-controls="pane-psets" aria-selected="false" data-facet-tab="psets" disabled>Vlastnosti</button>
+          <button class="ebc-filter" role="tab" type="button" id="tab-mats" aria-controls="pane-mats" aria-selected="false" data-facet-tab="mats" disabled>Materiály</button>
+          <button class="ebc-filter" role="tab" type="button" id="tab-groups" aria-controls="pane-groups" aria-selected="false" data-facet-tab="groups" disabled>Patří do</button>
+          <button class="ebc-filter" role="tab" type="button" id="tab-classif" aria-controls="pane-classif" aria-selected="false" data-facet-tab="classif" disabled>Klasifikace</button>
+        </div>
+
+        <div class="ifc-pane ifc-pane--scroll" id="pane-files" role="tabpanel" aria-labelledby="tab-files">
+          <div class="ifc-pad">
+            <label class="ebc-dropzone" id="drop">
+              <input type="file" id="file" multiple accept=".ifc" hidden>
+              <svg class="ebc-icon ebc-dropzone__icon" aria-hidden="true"><use href="./ebc/ebc-icons.svg#ebc-icon-ifc"/></svg>
+              <span class="ebc-dropzone__title">Přetáhněte soubory IFC sem</span>
+              <span class="ebc-dropzone__hint">nebo vyberte kliknutím – i více najednou</span>
+            </label>
+            <p class="ifc-muted">Modely se zpracují jen v tomto zařízení, nikam se neodesílají.</p>
+          </div>
+          <ul class="ebc-filelist ifc-files" id="loaded" aria-label="Načtené modely"></ul>
+          <div class="ifc-note" id="cut-row" hidden>
+            <button class="ebc-btn ifc-btn" type="button" id="btn-cut"><span data-ico="layers"></span>Vyříznout otvory</button>
+            <p class="ifc-muted" id="cut-info"></p>
+          </div>
+          <div class="ifc-note" id="merge-row" hidden>
+            <button class="ebc-btn ifc-btn" type="button" id="btn-merge"><span data-ico="drop-download"></span>Uložit sloučené IFC</button>
+            <p class="ifc-muted">Spojí zobrazené modely do jednoho souboru IFC (jeden IfcProject). Geometrie, GUID a vlastnosti se nemění. Soubor vznikne v zařízení.</p>
+          </div>
+        </div>
+
+        <div class="ifc-pane ifc-pane--tree" id="pane-tree" role="tabpanel" aria-labelledby="tab-tree" hidden>
+          <div class="ifc-tools">
+            <div class="ifc-seg" id="tree-mode" role="group" aria-label="Uspořádání">
+              <button class="ebc-filter" type="button" aria-pressed="true" data-value="tree">Struktura</button>
+              <button class="ebc-filter" type="button" aria-pressed="false" data-value="guidtree">GUID</button>
+              <button class="ebc-filter" type="button" aria-pressed="false" data-value="guid">Seznam GUID</button>
+            </div>
+            <div class="ifc-row ifc-row--wrap">
+              <button class="ebc-btn ifc-btn" type="button" popovertarget="tree-levels" aria-haspopup="menu"><span data-ico="layers"></span>Rozbalit<span data-ico="chevron-down"></span></button>
+              <div class="ebc-menu" id="tree-levels" popover role="menu">
+                <div class="ebc-group-label ifc-menu__label">Rozbalit do úrovně</div>
+                <button class="ebc-menu__item" role="menuitem" type="button" data-level="1"><span></span><span>Projekt</span></button>
+                <button class="ebc-menu__item" role="menuitem" type="button" data-level="2"><span></span><span>Pozemek</span></button>
+                <button class="ebc-menu__item" role="menuitem" type="button" data-level="3"><span></span><span>Stavba</span></button>
+                <button class="ebc-menu__item" role="menuitem" type="button" data-level="4"><span></span><span>Podlaží</span></button>
+                <button class="ebc-menu__item" role="menuitem" type="button" data-level="99"><span></span><span>Vše (i prvky a jejich části)</span></button>
+              </div>
+              <label class="ebc-choice" title="Stejně pojmenovaný projekt, pozemek, stavba a podlaží ze všech modelů v jednom uzlu"><input type="checkbox" id="tree-combine">Spojit modely</label>
+              <label class="ebc-choice"><input type="checkbox" id="tree-files">Soubory ve stromu</label>
+            </div>
+            <label class="ifc-search"><span data-ico="search"></span><input class="ebc-input" type="search" id="tree-q" placeholder="Hledat název, GUID, třídu" aria-label="Hledat prvek"></label>
+            <div class="ifc-row">
+              <button class="ebc-btn ifc-btn" type="button" id="btn-isolate" disabled>Izolovat</button>
+              <button class="ebc-btn ifc-btn" type="button" id="btn-hide" disabled>Skrýt</button>
+              <button class="ebc-btn ifc-btn ifc-push" type="button" id="btn-showall">Zobrazit vše</button>
+            </div>
+          </div>
+          <div class="ifc-tree-host" id="tree"></div>
+          <p class="ifc-tree-foot" id="tree-foot" aria-live="polite"></p>
+        </div>
+
+        <div class="ifc-pane" id="pane-classes" role="tabpanel" aria-labelledby="tab-classes" hidden>
+          <div class="ifc-tools">
+            <div class="ifc-row">
+              <button class="ebc-btn ifc-btn" type="button" id="cls-all">Zobrazit vše</button>
+              <button class="ebc-btn ifc-btn" type="button" id="cls-none">Skrýt vše</button>
+              <span class="ifc-muted" id="cls-sum"></span>
+            </div>
+          </div>
+          <ul class="ebc-list ifc-classes" id="classes" aria-label="Třídy IFC"></ul>
+        </div>
+
+        <div class="ifc-pane ifc-pane--tree" id="pane-attrs" role="tabpanel" aria-labelledby="tab-attrs" data-facet-pane="attrs" hidden>
+          <div class="ifc-tools">
+            <div class="ifc-row">
+              <button class="ebc-btn ifc-btn" type="button" data-facet-all>Zobrazit vše</button>
+              <button class="ebc-btn ifc-btn" type="button" data-facet-none>Skrýt vše</button>
+              <span class="ifc-muted" data-facet-sum></span>
+            </div>
+            <label class="ifc-search"><span data-ico="search"></span><input class="ebc-input" type="search" data-facet-q placeholder="Hledat hodnotu" aria-label="Hledat hodnotu"></label>
+          </div>
+          <div class="ifc-tree-host" data-facet-host></div>
+        </div>
+        <div class="ifc-pane ifc-pane--tree" id="pane-psets" role="tabpanel" aria-labelledby="tab-psets" data-facet-pane="psets" hidden>
+          <div class="ifc-tools">
+            <div class="ifc-row">
+              <button class="ebc-btn ifc-btn" type="button" data-facet-all>Zobrazit vše</button>
+              <button class="ebc-btn ifc-btn" type="button" data-facet-none>Skrýt vše</button>
+              <span class="ifc-muted" data-facet-sum></span>
+            </div>
+            <label class="ifc-search"><span data-ico="search"></span><input class="ebc-input" type="search" data-facet-q placeholder="Hledat hodnotu" aria-label="Hledat hodnotu"></label>
+          </div>
+          <div class="ifc-tree-host" data-facet-host></div>
+        </div>
+        <div class="ifc-pane ifc-pane--tree" id="pane-mats" role="tabpanel" aria-labelledby="tab-mats" data-facet-pane="mats" hidden>
+          <div class="ifc-tools">
+            <div class="ifc-row">
+              <button class="ebc-btn ifc-btn" type="button" data-facet-all>Zobrazit vše</button>
+              <button class="ebc-btn ifc-btn" type="button" data-facet-none>Skrýt vše</button>
+              <span class="ifc-muted" data-facet-sum></span>
+            </div>
+            <label class="ifc-search"><span data-ico="search"></span><input class="ebc-input" type="search" data-facet-q placeholder="Hledat hodnotu" aria-label="Hledat hodnotu"></label>
+          </div>
+          <div class="ifc-tree-host" data-facet-host></div>
+        </div>
+        <div class="ifc-pane ifc-pane--tree" id="pane-groups" role="tabpanel" aria-labelledby="tab-groups" data-facet-pane="groups" hidden>
+          <div class="ifc-tools">
+            <div class="ifc-row">
+              <button class="ebc-btn ifc-btn" type="button" data-facet-all>Zobrazit vše</button>
+              <button class="ebc-btn ifc-btn" type="button" data-facet-none>Skrýt vše</button>
+              <span class="ifc-muted" data-facet-sum></span>
+            </div>
+            <label class="ifc-search"><span data-ico="search"></span><input class="ebc-input" type="search" data-facet-q placeholder="Hledat hodnotu" aria-label="Hledat hodnotu"></label>
+          </div>
+          <div class="ifc-tree-host" data-facet-host></div>
+        </div>
+        <div class="ifc-pane ifc-pane--tree" id="pane-classif" role="tabpanel" aria-labelledby="tab-classif" data-facet-pane="classif" hidden>
+          <div class="ifc-tools">
+            <div class="ifc-row">
+              <button class="ebc-btn ifc-btn" type="button" data-facet-all>Zobrazit vše</button>
+              <button class="ebc-btn ifc-btn" type="button" data-facet-none>Skrýt vše</button>
+              <span class="ifc-muted" data-facet-sum></span>
+            </div>
+            <label class="ifc-search"><span data-ico="search"></span><input class="ebc-input" type="search" data-facet-q placeholder="Hledat hodnotu" aria-label="Hledat hodnotu"></label>
+          </div>
+          <div class="ifc-tree-host" data-facet-host></div>
+        </div>
+
+        <p class="ebc-small ifc-panel__foot">Autor: Lukáš Hovorka · <a class="ebc-link" href="mailto:lukas.hovorka@energy-benefit.cz">lukas.hovorka@energy-benefit.cz</a></p>
+      </div>
+    </aside>
+    <div class="ifc-panel-resize" id="panel-resize" role="separator" aria-orientation="vertical" aria-label="Šířka panelu (táhnout, dvojklik = výchozí)" title="Šířka panelu (táhnout, dvojklik = výchozí)" tabindex="0"></div>
+
+    <div class="ebc-menu" id="ctx" popover role="menu" aria-label="Akce prvku">
+      <div class="ebc-group-label ifc-menu__label" id="ctx-title"></div>
+      <button class="ebc-menu__item" role="menuitem" type="button" data-ctx="zoom"><span data-ico="target"></span><span>Přiblížit</span></button>
+      <button class="ebc-menu__item" role="menuitem" type="button" data-ctx="isolate"><span data-ico="filter-settings"></span><span>Izolovat</span></button>
+      <button class="ebc-menu__item" role="menuitem" type="button" data-ctx="hide"><span data-ico="window-close"></span><span>Skrýt</span></button>
+      <button class="ebc-menu__item" role="menuitem" type="button" data-ctx="show"><span data-ico="eye"></span><span>Zobrazit</span></button>
+      <button class="ebc-menu__item ifc-ctx-more" role="menuitem" type="button" aria-haspopup="menu" aria-expanded="false" data-ctx-more="isolate"><span data-ico="layers"></span><span>Izolovat více</span><span class="ifc-ctx-more__arrow" aria-hidden="true">▸</span></button>
+      <button class="ebc-menu__item ifc-ctx-more" role="menuitem" type="button" aria-haspopup="menu" aria-expanded="false" data-ctx-more="hide"><span data-ico="layers"></span><span>Skrýt více</span><span class="ifc-ctx-more__arrow" aria-hidden="true">▸</span></button>
+      <div class="ebc-menu ifc-ctx-sub" id="ctx-sub" role="menu"></div>
+      <div class="ebc-menu__sep"></div>
+      <button class="ebc-menu__item" role="menuitem" type="button" data-ctx="expand"><span data-ico="chevron-down"></span><span>Rozbalit celou větev</span></button>
+      <button class="ebc-menu__item" role="menuitem" type="button" data-ctx="collapse"><span data-ico="chevron-up"></span><span>Sbalit celou větev</span></button>
+      <div class="ebc-menu__sep" data-ctx-tree></div>
+      <button class="ebc-menu__item" role="menuitem" type="button" data-ctx="hideall"><span></span><span>Skrýt vše</span></button>
+      <button class="ebc-menu__item" role="menuitem" type="button" data-ctx="showall"><span></span><span>Zobrazit vše</span></button>
+      <button class="ebc-menu__item" role="menuitem" type="button" data-ctx="invert"><span></span><span>Obrátit viditelnost</span></button>
+    </div>
+
+    <aside class="ifc-panel ifc-panel--right" id="props" aria-labelledby="props-t" hidden>
+      <header class="ifc-panel__head ifc-panel__head--bar">
+        <h2 class="ifc-panel__title" id="props-t">Vlastnosti</h2>
+        <span class="ifc-count" id="sel-count" title="Vybrané prvky" hidden></span>
+        <button class="ebc-icon-btn ifc-push" type="button" id="props-zoom" data-tip="Přiblížit na výběr" data-tip-pos="bottom" aria-label="Přiblížit na výběr"><span data-ico="target"></span></button>
+        <button class="ebc-icon-btn" type="button" id="props-close" data-tip="Zrušit výběr" data-tip-pos="bottom" aria-label="Zrušit výběr"><span data-ico="window-close"></span></button>
+      </header>
+      <div class="ifc-panel__body ifc-pane--scroll" id="props-body"></div>
+    </aside>
+
+    <!-- nastavení aktivního nástroje (řez, kvádr, rozpad, měření) -->
+    <div class="ifc-toolcard" id="toolcard" role="region" aria-label="Nástroj" hidden></div>
+
+    <div class="ifc-hud" role="toolbar" aria-label="Pohled a nástroje">
+      <button class="ebc-icon-btn" type="button" id="btn-fit" data-tip="Celý model" aria-label="Celý model" disabled><span data-ico="home"></span></button>
+      <button class="ebc-icon-btn" type="button" id="btn-top" popovertarget="views" aria-haspopup="menu" data-tip="Pohledy" aria-label="Pohledy" disabled><span data-ico="top"></span></button>
+      <div class="ebc-menu" id="views" popover role="menu">
+        <div class="ebc-group-label ifc-menu__label">Pohled</div>
+        <button class="ebc-menu__item" role="menuitem" type="button" data-view="top"><span></span><span>Shora</span></button>
+        <button class="ebc-menu__item" role="menuitem" type="button" data-view="bottom"><span></span><span>Zdola</span></button>
+        <button class="ebc-menu__item" role="menuitem" type="button" data-view="front"><span></span><span>Zepředu</span></button>
+        <button class="ebc-menu__item" role="menuitem" type="button" data-view="back"><span></span><span>Zezadu</span></button>
+        <button class="ebc-menu__item" role="menuitem" type="button" data-view="left"><span></span><span>Zleva</span></button>
+        <button class="ebc-menu__item" role="menuitem" type="button" data-view="right"><span></span><span>Zprava</span></button>
+        <button class="ebc-menu__item" role="menuitem" type="button" data-view="iso"><span></span><span>Izometrie</span></button>
+        <div class="ebc-menu__sep"></div>
+        <label class="ebc-toggle ifc-proj">Perspektivní<input type="checkbox" id="btn-proj" disabled><span class="ebc-toggle__track"></span>Ortogonální</label>
+      </div>
+      <span class="ifc-hud__sep"></span>
+      <button class="ebc-icon-btn" type="button" id="btn-section" data-tip="Řez" aria-label="Řez" aria-pressed="false" disabled><span data-ico="cut"></span></button>
+      <button class="ebc-icon-btn" type="button" id="btn-box" data-tip="Řezový kvádr" aria-label="Řezový kvádr" aria-pressed="false" disabled><span data-ico="box"></span></button>
+      <button class="ebc-icon-btn" type="button" id="btn-measure" data-tip="Měření vzdálenosti" aria-label="Měření vzdálenosti" aria-pressed="false" disabled><span data-ico="ruler"></span></button>
+      <button class="ebc-icon-btn" type="button" id="btn-explode" data-tip="Rozpad podlaží" aria-label="Rozpad podlaží" aria-pressed="false" disabled><span data-ico="explode"></span></button>
+    </div>
+    <p class="ebc-small ifc-hint" id="hint">Kolečko: posun · Shift + kolečko: otáčení · Klepnutí / tažení: výběr · Pravé tlačítko: nabídka</p>
+  </main>
+
+  <!-- nabídka barvy modelu (sdílená, kolečko v řádku modelu má popovertarget="colors") -->
+  <div class="ebc-menu ifc-colors" id="colors" popover role="menu" aria-label="Barva modelu">
+    <div class="ebc-group-label ifc-menu__label">Barva modelu</div>
+    <div class="ifc-colors__palette">
+      <button class="ifc-swatch" type="button" role="menuitemradio" data-color="#262626" style="--swatch: #262626" aria-label="Černá" title="Černá"></button>
+      <button class="ifc-swatch" type="button" role="menuitemradio" data-color="#8a8a8a" style="--swatch: #8a8a8a" aria-label="Šedá" title="Šedá"></button>
+      <button class="ifc-swatch" type="button" role="menuitemradio" data-color="#f2f2f2" style="--swatch: #f2f2f2" aria-label="Bílá" title="Bílá"></button>
+      <button class="ifc-swatch" type="button" role="menuitemradio" data-color="#8b5a2b" style="--swatch: #8b5a2b" aria-label="Hnědá" title="Hnědá"></button>
+      <button class="ifc-swatch" type="button" role="menuitemradio" data-color="#d7263d" style="--swatch: #d7263d" aria-label="Červená" title="Červená"></button>
+      <button class="ifc-swatch" type="button" role="menuitemradio" data-color="#2e9d4f" style="--swatch: #2e9d4f" aria-label="Zelená" title="Zelená"></button>
+      <button class="ifc-swatch" type="button" role="menuitemradio" data-color="#2f6fd6" style="--swatch: #2f6fd6" aria-label="Modrá" title="Modrá"></button>
+      <button class="ifc-swatch" type="button" role="menuitemradio" data-color="#f5d000" style="--swatch: #f5d000" aria-label="Žlutá" title="Žlutá"></button>
+      <button class="ifc-swatch" type="button" role="menuitemradio" data-color="#f08a24" style="--swatch: #f08a24" aria-label="Oranžová" title="Oranžová"></button>
+      <button class="ifc-swatch" type="button" role="menuitemradio" data-color="#e86aa6" style="--swatch: #e86aa6" aria-label="Růžová" title="Růžová"></button>
+      <button class="ifc-swatch" type="button" role="menuitemradio" data-color="#1ab3a6" style="--swatch: #1ab3a6" aria-label="Tyrkysová" title="Tyrkysová"></button>
+      <button class="ifc-swatch" type="button" role="menuitemradio" data-color="#8e44ad" style="--swatch: #8e44ad" aria-label="Fialová" title="Fialová"></button>
+    </div>
+    <div class="ebc-menu__sep"></div>
+    <button class="ebc-menu__item" type="button" role="menuitemradio" data-act="custom"><span class="ifc-swatch"></span><span>Vlastní barva…</span></button>
+    <button class="ebc-menu__item" type="button" role="menuitemradio" data-act="orig"><span class="ifc-swatch is-original"></span><span>Původní barvy z IFC</span></button>
+  </div>
+  <input type="color" class="ifc-color-input" id="color-input" value="#2f6fae" tabindex="-1" aria-hidden="true">
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
