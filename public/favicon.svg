@@ -1,9 +1,10 @@
-<svg width="115" height="119" viewBox="0 0 115 119" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path fill-rule="evenodd" clip-rule="evenodd" d="M114.921 58.4252L57.4606 0L0 58.4252V118.628H16.7666V74.3505L32.1144 89.8981V118.628H48.881V82.9638L24.1121 57.8724L35.1058 46.6942L64.9703 76.8944V118.628H81.737V69.9514L46.8897 34.7125L57.4606 23.9641L98.1546 65.3412V118.628H114.921V58.4252Z" fill="url(#paint0_linear_3816_3221)"/>
-<defs>
-<linearGradient id="paint0_linear_3816_3221" x1="98.1546" y1="34.2046" x2="3.28634" y2="122.728" gradientUnits="userSpaceOnUse">
-<stop stop-color="#FFAC0A"/>
-<stop offset="1" stop-color="#F97A00"/>
-</linearGradient>
-</defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>IFC Viewer</title>
+  <rect width="64" height="64" rx="12.8" fill="#1E1E1E"/>
+  <path fill="#774A01" d="M32 22.2 L49 32 L32 41.8 L15 32Z"/>
+  <path fill="#FF9900" d="M15 32 L32 41.8 L32 52.8 L15 43Z"/>
+  <path fill="#D47B02" d="M32 41.8 L49 32 L49 43 L32 52.8Z"/>
+  <path fill="#FFB326" d="M32 10.2 L49 20 L32 29.8 L15 20Z"/>
+  <path fill="#FF9900" d="M15 20 L32 29.8 L32 34.8 L15 25Z"/>
+  <path fill="#D47B02" d="M32 29.8 L49 20 L49 25 L32 34.8Z"/>
 </svg>

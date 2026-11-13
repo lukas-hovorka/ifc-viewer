@@ -46,7 +46,10 @@ a **needitují se** – při nové verzi se zkopírují znovu:
 | `src/ebc/ebc-tokens.css`, `src/ebc/ebc-components.css` | `dist/css/` |
 | `src/ebc/ebc-tokens.dark.json`, `src/ebc/ebc-tokens.light.json` | `dist/json/` (barvy 3D scény) |
 | `public/ebc/ebc-icons.svg` | `dist/css/` |
-| `public/favicon.svg` | `assets/logo/ebc-mark.svg` |
+
+Favicon a ikona aplikace (`public/favicon.svg`, `public/icons/`) se generují z barev tokenů:
+`python scripts/make-icons.py` (potřebuje Pillow). Motiv je model rozložený po podlažích – kvádr s nadzvednutou
+deskou v akcentu na tmavé dlaždici jako u ikon BCF Converter a ifc.vr.
 
 Vlastní styly jsou v `src/app.css` (třídy `.ifc-*`, hodnoty jen přes `var(--ebc-…)`), chování rozhraní
 v `src/ui/gui.js`, motiv a barvy scény v `src/ui/theme.js`.
